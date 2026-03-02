@@ -1,8 +1,8 @@
 --[[
-    ⚡⚡⚡ AUTO FARM KILL ELITE ⚡⚡⚡
-    Farm automatique de kills
+    ⚡⚡⚡ AUTO FARM ULTIME - TELEPORT + SPAM ⚡⚡⚡
+    Se téléporte sur les joueurs et spam toutes les attaques
     Jujutsu Shenanigans
-    Version: 3.0
+    Version: 4.0
 ]]
 
 -- Attendre le chargement
@@ -16,6 +16,7 @@ local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local Workspace = game:GetService("Workspace")
+local TeleportService = game:GetService("TeleportService")
 
 -- Détection mobile
 local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
@@ -25,17 +26,18 @@ local farmEnabled = false
 local minimized = false
 local currentTarget = nil
 local killCount = 0
-local farmMode = "dummies" -- "dummies", "players", "both"
 local localPlayer = game.Players.LocalPlayer
+local attackSpam = true
+local tpDistance = 5 -- Distance de téléportation
 
 -- Dossier ESP
 local farmESP = Instance.new("Folder")
-farmESP.Name = "FarmESP_" .. tostring(math.random(1000, 9999))
+farmESP.Name = "FarmUltime_" .. tostring(math.random(1000, 9999))
 farmESP.Parent = CoreGui
 
 -- Interface magnifique
 local gui = Instance.new("ScreenGui")
-gui.Name = "AutoFarmKill_" .. tostring(math.random(1000, 9999))
+gui.Name = "AutoFarmUltime_" .. tostring(math.random(1000, 9999))
 gui.ResetOnSpawn = false
 gui.Parent = CoreGui
 
@@ -45,8 +47,8 @@ gui.Parent = CoreGui
 
 -- MAIN FRAME
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 350, 0, 250)
-mainFrame.Position = UDim2.new(0.5, -175, 0.8, -125)
+mainFrame.Size = UDim2.new(0, 350, 0, 220)
+mainFrame.Position = UDim2.new(0.5, -175, 0.8, -110)
 mainFrame.BackgroundColor3 = Color3.fromRGB(10, 5, 20)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -56,16 +58,16 @@ mainFrame.Draggable = true
 mainFrame.Parent = gui
 
 -- Animation d'apparition
-mainFrame.Size = UDim2.new(0, 370, 0, 270)
+mainFrame.Size = UDim2.new(0, 370, 0, 240)
 TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size = UDim2.new(0, 350, 0, 250)
+    Size = UDim2.new(0, 350, 0, 220)
 }):Play()
 
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 20)
 mainCorner.Parent = mainFrame
 
--- Bordure néon rouge (style combat)
+-- Bordure néon violette (style téléportation)
 local mainBorder = Instance.new("Frame")
 mainBorder.Size = UDim2.new(1, 10, 1, 10)
 mainBorder.Position = UDim2.new(-0.02, -5, -0.02, -5)
@@ -74,10 +76,10 @@ mainBorder.Parent = mainFrame
 
 local mainBorderGradient = Instance.new("UIGradient")
 mainBorderGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 0, 255)),
     ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 0, 255)),
-    ColorSequenceKeypoint.new(0.66, Color3.fromRGB(255, 100, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+    ColorSequenceKeypoint.new(0.66, Color3.fromRGB(100, 0, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 0, 255))
 })
 mainBorderGradient.Rotation = 0
 mainBorderGradient.Parent = mainBorder
@@ -118,7 +120,7 @@ shadow.Parent = mainFrame
 -- HEADER
 local header = Instance.new("Frame")
 header.Size = UDim2.new(1, 0, 0, 50)
-header.BackgroundColor3 = Color3.fromRGB(30, 5, 15)
+header.BackgroundColor3 = Color3.fromRGB(40, 5, 40)
 header.BackgroundTransparency = 0.2
 header.BorderSizePixel = 0
 header.Parent = mainFrame
@@ -127,22 +129,22 @@ local headerCorner = Instance.new("UICorner")
 headerCorner.CornerRadius = UDim.new(0, 20)
 headerCorner.Parent = header
 
--- Icône de combat
-local combatIcon = Instance.new("TextLabel")
-combatIcon.Size = UDim2.new(0, 30, 0, 30)
-combatIcon.Position = UDim2.new(0, 15, 0.5, -15)
-combatIcon.BackgroundTransparency = 1
-combatIcon.Text = "⚔️"
-combatIcon.TextColor3 = Color3.fromRGB(255, 100, 100)
-combatIcon.Font = Enum.Font.GothamBold
-combatIcon.TextSize = 22
-combatIcon.Parent = header
+-- Icône de téléportation
+local tpIcon = Instance.new("TextLabel")
+tpIcon.Size = UDim2.new(0, 30, 0, 30)
+tpIcon.Position = UDim2.new(0, 15, 0.5, -15)
+tpIcon.BackgroundTransparency = 1
+tpIcon.Text = "🌀"
+tpIcon.TextColor3 = Color3.fromRGB(150, 100, 255)
+tpIcon.Font = Enum.Font.GothamBold
+tpIcon.TextSize = 22
+tpIcon.Parent = header
 
 local headerTitle = Instance.new("TextLabel")
-headerTitle.Size = UDim2.new(0, 180, 1, 0)
+headerTitle.Size = UDim2.new(0, 200, 1, 0)
 headerTitle.Position = UDim2.new(0, 50, 0, 0)
 headerTitle.BackgroundTransparency = 1
-headerTitle.Text = "AUTO FARM KILL"
+headerTitle.Text = "FARM ULTIME"
 headerTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 headerTitle.Font = Enum.Font.GothamBold
 headerTitle.TextSize = 18
@@ -150,10 +152,10 @@ headerTitle.TextXAlignment = Enum.TextXAlignment.Left
 headerTitle.Parent = header
 
 local headerSub = Instance.new("TextLabel")
-headerSub.Size = UDim2.new(0, 180, 0, 15)
+headerSub.Size = UDim2.new(0, 200, 0, 15)
 headerSub.Position = UDim2.new(0, 50, 0, 30)
 headerSub.BackgroundTransparency = 1
-headerSub.Text = "Farm automatique"
+headerSub.Text = "TP + Spam toutes les attaques"
 headerSub.TextColor3 = Color3.fromRGB(180, 180, 220)
 headerSub.Font = Enum.Font.Gotham
 headerSub.TextSize = 10
@@ -164,7 +166,7 @@ headerSub.Parent = header
 local minBtn = Instance.new("TextButton")
 minBtn.Size = UDim2.new(0, 30, 0, 30)
 minBtn.Position = UDim2.new(1, -40, 0.5, -15)
-minBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 50)
+minBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 80)
 minBtn.BackgroundTransparency = 0.3
 minBtn.Text = "−"
 minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -180,7 +182,7 @@ minCorner.Parent = minBtn
 local statsCard = Instance.new("Frame")
 statsCard.Size = UDim2.new(1, -30, 0, 70)
 statsCard.Position = UDim2.new(0, 15, 0, 65)
-statsCard.BackgroundColor3 = Color3.fromRGB(25, 10, 20)
+statsCard.BackgroundColor3 = Color3.fromRGB(30, 10, 30)
 statsCard.BackgroundTransparency = 0.2
 statsCard.BorderSizePixel = 0
 statsCard.Parent = mainFrame
@@ -240,7 +242,7 @@ statusValue.Parent = statsCard
 local killsCard = Instance.new("Frame")
 killsCard.Size = UDim2.new(0, 80, 0, 50)
 killsCard.Position = UDim2.new(1, -95, 0.5, -25)
-killsCard.BackgroundColor3 = Color3.fromRGB(60, 20, 30)
+killsCard.BackgroundColor3 = Color3.fromRGB(80, 20, 80)
 killsCard.BackgroundTransparency = 0.2
 killsCard.BorderSizePixel = 0
 killsCard.Parent = statsCard
@@ -254,7 +256,7 @@ killsIcon.Size = UDim2.new(1, 0, 0, 25)
 killsIcon.Position = UDim2.new(0, 0, 0, 2)
 killsIcon.BackgroundTransparency = 1
 killsIcon.Text = "💀"
-killsIcon.TextColor3 = Color3.fromRGB(255, 100, 100)
+killsIcon.TextColor3 = Color3.fromRGB(200, 100, 255)
 killsIcon.Font = Enum.Font.GothamBold
 killsIcon.TextSize = 20
 killsIcon.Parent = killsCard
@@ -269,73 +271,22 @@ killsNumber.Font = Enum.Font.GothamBold
 killsNumber.TextSize = 16
 killsNumber.Parent = killsCard
 
--- MODE SELECTEUR
-local modeFrame = Instance.new("Frame")
-modeFrame.Size = UDim2.new(1, -30, 0, 40)
-modeFrame.Position = UDim2.new(0, 15, 0, 145)
-modeFrame.BackgroundTransparency = 1
-modeFrame.Parent = mainFrame
-
-local modeLabel = Instance.new("TextLabel")
-modeLabel.Size = UDim2.new(0, 100, 1, 0)
-modeLabel.BackgroundTransparency = 1
-modeLabel.Text = "MODE:"
-modeLabel.TextColor3 = Color3.fromRGB(180, 180, 220)
-modeLabel.Font = Enum.Font.Gotham
-modeLabel.TextSize = 12
-modeLabel.TextXAlignment = Enum.TextXAlignment.Left
-modeLabel.Parent = modeFrame
-
--- Bouton mode Dummies
-local modeDummies = Instance.new("TextButton")
-modeDummies.Size = UDim2.new(0, 70, 0, 25)
-modeDummies.Position = UDim2.new(0, 50, 0.5, -12)
-modeDummies.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-modeDummies.Text = "DUMMIES"
-modeDummies.TextColor3 = Color3.fromRGB(255, 255, 255)
-modeDummies.Font = Enum.Font.GothamBold
-modeDummies.TextSize = 9
-modeDummies.Parent = modeFrame
-
-local modeCorner = Instance.new("UICorner")
-modeCorner.CornerRadius = UDim.new(0, 6)
-modeCorner.Parent = modeDummies
-
--- Bouton mode Players
-local modePlayers = Instance.new("TextButton")
-modePlayers.Size = UDim2.new(0, 70, 0, 25)
-modePlayers.Position = UDim2.new(0, 130, 0.5, -12)
-modePlayers.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-modePlayers.Text = "PLAYERS"
-modePlayers.TextColor3 = Color3.fromRGB(255, 255, 255)
-modePlayers.Font = Enum.Font.GothamBold
-modePlayers.TextSize = 9
-modePlayers.Parent = modeFrame
-
-local modeCorner2 = Instance.new("UICorner")
-modeCorner2.CornerRadius = UDim.new(0, 6)
-modeCorner2.Parent = modePlayers
-
--- Bouton mode Both
-local modeBoth = Instance.new("TextButton")
-modeBoth.Size = UDim2.new(0, 70, 0, 25)
-modeBoth.Position = UDim2.new(0, 210, 0.5, -12)
-modeBoth.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-modeBoth.Text = "BOTH"
-modeBoth.TextColor3 = Color3.fromRGB(255, 255, 255)
-modeBoth.Font = Enum.Font.GothamBold
-modeBoth.TextSize = 9
-modeBoth.Parent = modeFrame
-
-local modeCorner3 = Instance.new("UICorner")
-modeCorner3.CornerRadius = UDim.new(0, 6)
-modeCorner3.Parent = modeBoth
+-- INFO TELEPORTATION
+local tpInfo = Instance.new("TextLabel")
+tpInfo.Size = UDim2.new(1, -30, 0, 20)
+tpInfo.Position = UDim2.new(0, 15, 0, 145)
+tpInfo.BackgroundTransparency = 1
+tpInfo.Text = "🌀 Téléportation automatique sur les ennemis"
+tpInfo.TextColor3 = Color3.fromRGB(180, 150, 255)
+tpInfo.Font = Enum.Font.Gotham
+tpInfo.TextSize = 11
+tpInfo.Parent = mainFrame
 
 -- BOUTON PRINCIPAL
 local mainBtn = Instance.new("TextButton")
 mainBtn.Size = UDim2.new(0.8, 0, 0, 40)
-mainBtn.Position = UDim2.new(0.1, 0, 0, 195)
-mainBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+mainBtn.Position = UDim2.new(0.1, 0, 0, 175)
+mainBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 150)
 mainBtn.BorderSizePixel = 0
 mainBtn.Text = ""
 mainBtn.Parent = mainFrame
@@ -359,7 +310,7 @@ shineCorner.Parent = btnShine
 local btnText = Instance.new("TextLabel")
 btnText.Size = UDim2.new(1, 0, 1, 0)
 btnText.BackgroundTransparency = 1
-btnText.Text = "ACTIVER LE FARM"
+btnText.Text = "ACTIVER LE FARM ULTIME"
 btnText.TextColor3 = Color3.fromRGB(255, 255, 255)
 btnText.Font = Enum.Font.GothamBold
 btnText.TextSize = 14
@@ -369,7 +320,7 @@ btnText.Parent = mainBtn
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 30, 0, 30)
 closeBtn.Position = UDim2.new(1, -40, 0, 10)
-closeBtn.BackgroundColor3 = Color3.fromRGB(60, 40, 50)
+closeBtn.BackgroundColor3 = Color3.fromRGB(80, 40, 80)
 closeBtn.BackgroundTransparency = 0.3
 closeBtn.Text = "✕"
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -405,9 +356,9 @@ minFrameBorder.Parent = minFrame
 
 local minBorderGradient = Instance.new("UIGradient")
 minBorderGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 0, 255)),
     ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 0, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 0, 255))
 })
 minBorderGradient.Rotation = 0
 minBorderGradient.Parent = minFrameBorder
@@ -423,8 +374,8 @@ local minIcon = Instance.new("TextLabel")
 minIcon.Size = UDim2.new(0, 30, 1, 0)
 minIcon.Position = UDim2.new(0, 8, 0, 0)
 minIcon.BackgroundTransparency = 1
-minIcon.Text = "⚔️"
-minIcon.TextColor3 = Color3.fromRGB(255, 100, 100)
+minIcon.Text = "🌀"
+minIcon.TextColor3 = Color3.fromRGB(150, 100, 255)
 minIcon.Font = Enum.Font.GothamBold
 minIcon.TextSize = 20
 minIcon.Parent = minFrame
@@ -504,110 +455,95 @@ makeDraggable(mainFrame)
 makeDraggable(minFrame)
 
 --------------------------------------------------------------------
--- FONCTIONS DE COMBAT ULTRA PRÉCISES
+-- FONCTIONS DE TÉLÉPORTATION ET COMBAT
 --------------------------------------------------------------------
 
--- Trouver les cibles
-local function findTargets()
-    local targets = {}
+-- Trouver tous les joueurs ennemis
+local function getEnemyPlayers()
+    local enemies = {}
     local character = localPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return targets end
+    if not character then return enemies end
     
-    local myPos = character.HumanoidRootPart.Position
-    
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
-            local humanoid = obj:FindFirstChildOfClass("Humanoid")
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
             if humanoid and humanoid.Health > 0 then
-                local isPlayer = Players:GetPlayerFromCharacter(obj)
-                local targetType = isPlayer and "player" or "dummy"
-                
-                -- Filtrage selon le mode
-                if farmMode == "both" then
-                    table.insert(targets, {char = obj, type = targetType, dist = (myPos - obj.HumanoidRootPart.Position).Magnitude})
-                elseif farmMode == "dummies" and targetType == "dummy" then
-                    table.insert(targets, {char = obj, type = targetType, dist = (myPos - obj.HumanoidRootPart.Position).Magnitude})
-                elseif farmMode == "players" and targetType == "player" and obj ~= character then
-                    table.insert(targets, {char = obj, type = targetType, dist = (myPos - obj.HumanoidRootPart.Position).Magnitude})
-                end
+                table.insert(enemies, player.Character)
             end
         end
     end
-    
-    -- Trier par distance
-    table.sort(targets, function(a, b) return a.dist < b.dist end)
-    return targets
+    return enemies
 end
 
--- Se déplacer vers la cible
-local function moveToTarget(target)
-    if not target or not target:FindFirstChild("HumanoidRootPart") then return end
+-- Fonction de téléportation derrière la cible
+local function teleportBehindTarget(target)
+    if not target or not target:FindFirstChild("HumanoidRootPart") then return false end
     
     local character = localPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return false end
     
-    local targetPos = target.HumanoidRootPart.Position
-    local myPos = character.HumanoidRootPart.Position
-    local dist = (targetPos - myPos).Magnitude
+    local targetRoot = target.HumanoidRootPart
+    local myRoot = character.HumanoidRootPart
     
-    if dist > 15 then
-        -- Dash vers la cible
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.LeftShift, false, game)
-        wait(0.05)
-        
-        -- Direction
-        local direction = (targetPos - myPos).Unit
-        local bodyVelocity = Instance.new("BodyVelocity")
-        bodyVelocity.Velocity = direction * 60
-        bodyVelocity.MaxForce = Vector3.new(4000, 0, 4000)
-        bodyVelocity.Parent = character.HumanoidRootPart
-        
-        wait(0.2)
-        bodyVelocity:Destroy()
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.LeftShift, false, game)
-    else
-        -- Avancer normalement
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.W, false, game)
-        wait(0.1)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.W, false, game)
-    end
+    -- Calculer la direction
+    local targetPos = targetRoot.Position
+    local targetForward = targetRoot.CFrame.LookVector
+    
+    -- Position derrière la cible (dans son dos)
+    local behindPos = targetPos - targetForward * 8
+    
+    -- Téléportation instantanée
+    myRoot.CFrame = CFrame.new(behindPos) * CFrame.Angles(0, math.rad(180), 0)
+    
+    -- Effet visuel (optionnel)
+    local teleportEffect = Instance.new("Attachment")
+    teleportEffect.Parent = myRoot
+    wait(0.1)
+    teleportEffect:Destroy()
+    
+    return true
 end
 
--- Attaquer la cible
-local function attackTarget(target)
-    if not target then return end
+-- Spam TOUTES les attaques possibles
+local function spamAllAttacks()
+    -- Liste de toutes les touches d'attaque dans Jujutsu Shenanigans
+    local attacks = {
+        -- Attaques de base
+        {key = Enum.KeyCode.MouseButton1, type = "mouse"}, -- Coup de poing
+        {key = Enum.KeyCode.MouseButton2, type = "mouse"}, -- Coup de pied
+        
+        -- Compétences principales
+        {key = Enum.KeyCode.Q, type = "key"}, -- Lapse Blue / Skill 1
+        {key = Enum.KeyCode.E, type = "key"}, -- Red / Skill 2
+        {key = Enum.KeyCode.R, type = "key"}, -- Black Flash / Ultimate
+        {key = Enum.KeyCode.T, type = "key"}, -- Rapid Punches / Skill 3
+        {key = Enum.KeyCode.Y, type = "key"}, -- Reversal / Skill 4
+        {key = Enum.KeyCode.F, type = "key"}, -- Parry / Skill spécial
+        {key = Enum.KeyCode.G, type = "key"}, -- Skill 5 (si existe)
+        {key = Enum.KeyCode.H, type = "key"}, -- Skill 6 (si existe)
+        
+        -- Compétences de mouvement
+        {key = Enum.KeyCode.LeftShift, type = "key"}, -- Dash
+        {key = Enum.KeyCode.Space, type = "key"}, -- Saut / Air combo
+    }
     
-    local humanoid = target:FindFirstChildOfClass("Humanoid")
-    if not humanoid or humanoid.Health <= 0 then return end
-    
-    -- Combo d'attaques
-    -- Coup de poing
-    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-    wait(0.05)
-    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
-    
-    wait(0.1)
-    
-    -- Coup de pied
-    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 2)
-    wait(0.05)
-    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 2)
-    
-    wait(0.1)
-    
-    -- Black Flash (R)
-    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.R, false, game)
-    wait(0.05)
-    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.R, false, game)
-    
-    wait(0.1)
-    
-    -- Skills selon la situation
-    if humanoid.Health < humanoid.MaxHealth * 0.3 then
-        -- Finisher si faible
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
-        wait(0.05)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
+    -- Spam toutes les attaques rapidement
+    for i = 1, 3 do -- 3 cycles de spam
+        for _, attack in ipairs(attacks) do
+            if attack.type == "mouse" then
+                -- Attaque souris
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, attack.key == Enum.KeyCode.MouseButton1 and 1 or 2)
+                wait(0.02)
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, attack.key == Enum.KeyCode.MouseButton1 and 1 or 2)
+            else
+                -- Attaque clavier
+                VirtualInputManager:SendKeyEvent(true, attack.key, false, game)
+                wait(0.02)
+                VirtualInputManager:SendKeyEvent(false, attack.key, false, game)
+            end
+            wait(0.03)
+        end
+        wait(0.1)
     end
 end
 
@@ -621,46 +557,73 @@ end
 -- Boucle principale de farm
 local function farmLoop()
     while farmEnabled do
-        local targets = findTargets()
+        local enemies = getEnemyPlayers()
         
-        if #targets > 0 then
-            local target = targets[1].char
-            currentTarget = target
+        if #enemies > 0 then
+            -- Choisir une cible (la plus proche)
+            local character = localPlayer.Character
+            local bestTarget = nil
+            local bestDist = math.huge
             
-            -- Mettre un ESP sur la cible
-            for _, v in pairs(farmESP:GetChildren()) do v:Destroy() end
-            
-            local highlight = Instance.new("Highlight")
-            highlight.Adornee = target
-            highlight.FillColor = Color3.fromRGB(255, 50, 50)
-            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            highlight.FillTransparency = 0.3
-            highlight.Parent = farmESP
-            
-            -- Se déplacer vers la cible
-            moveToTarget(target)
-            
-            -- Attaquer
-            attackTarget(target)
-            
-            -- Vérifier si kill
-            if isTargetDead(target) then
-                killCount = killCount + 1
-                killsNumber.Text = tostring(killCount)
-                minKills.Text = tostring(killCount)
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local myPos = character.HumanoidRootPart.Position
                 
-                -- Effet de kill
-                for i = 1, 3 do
-                    statusDot.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
-                    wait(0.05)
-                    statusDot.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-                    wait(0.05)
+                for _, enemy in ipairs(enemies) do
+                    if enemy and enemy:FindFirstChild("HumanoidRootPart") then
+                        local dist = (myPos - enemy.HumanoidRootPart.Position).Magnitude
+                        if dist < bestDist then
+                            bestDist = dist
+                            bestTarget = enemy
+                        end
+                    end
                 end
             end
             
-            wait(0.2)
+            if bestTarget then
+                currentTarget = bestTarget
+                
+                -- Mettre un ESP sur la cible
+                for _, v in pairs(farmESP:GetChildren()) do v:Destroy() end
+                
+                local highlight = Instance.new("Highlight")
+                highlight.Adornee = bestTarget
+                highlight.FillColor = Color3.fromRGB(200, 0, 255)
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.FillTransparency = 0.3
+                highlight.Parent = farmESP
+                
+                -- Se téléporter derrière la cible
+                teleportBehindTarget(bestTarget)
+                wait(0.1)
+                
+                -- Spam toutes les attaques
+                spamAllAttacks()
+                wait(0.2)
+                
+                -- Vérifier si la cible est morte
+                if isTargetDead(bestTarget) then
+                    killCount = killCount + 1
+                    killsNumber.Text = tostring(killCount)
+                    minKills.Text = tostring(killCount)
+                    
+                    -- Effet de kill
+                    for i = 1, 3 do
+                        statusDot.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+                        dotGlow.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+                        wait(0.05)
+                        statusDot.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+                        dotGlow.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+                        wait(0.05)
+                    end
+                    
+                    -- Chercher directement une nouvelle cible
+                    wait(0.1)
+                end
+            else
+                wait(0.1)
+            end
         else
-            -- Pas de cible, attendre
+            -- Pas d'ennemis, attendre
             for _, v in pairs(farmESP:GetChildren()) do v:Destroy() end
             currentTarget = nil
             wait(0.5)
@@ -670,28 +633,6 @@ local function farmLoop()
     -- Nettoyage
     for _, v in pairs(farmESP:GetChildren()) do v:Destroy() end
 end
-
--- Changer de mode
-modeDummies.MouseButton1Click:Connect(function()
-    farmMode = "dummies"
-    modeDummies.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    modePlayers.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    modeBoth.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-end)
-
-modePlayers.MouseButton1Click:Connect(function()
-    farmMode = "players"
-    modeDummies.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    modePlayers.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    modeBoth.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-end)
-
-modeBoth.MouseButton1Click:Connect(function()
-    farmMode = "both"
-    modeDummies.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    modePlayers.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-    modeBoth.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-end)
 
 -- Toggle farm
 local function toggleFarm()
@@ -704,7 +645,7 @@ local function toggleFarm()
         statusValue.TextColor3 = Color3.fromRGB(0, 255, 0)
         minDot.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
         btnText.Text = "DÉSACTIVER LE FARM"
-        mainBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        mainBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 200)
         
         -- Démarrer le farm
         task.spawn(farmLoop)
@@ -714,8 +655,8 @@ local function toggleFarm()
         statusValue.Text = "INACTIF"
         statusValue.TextColor3 = Color3.fromRGB(255, 100, 100)
         minDot.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        btnText.Text = "ACTIVER LE FARM"
-        mainBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        btnText.Text = "ACTIVER LE FARM ULTIME"
+        mainBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 150)
         
         -- Nettoyer
         for _, v in pairs(farmESP:GetChildren()) do v:Destroy() end
@@ -774,54 +715,20 @@ end)
 
 -- Effets de survol
 minBtn.MouseEnter:Connect(function()
-    TweenService:Create(minBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(120, 60, 80)}):Play()
+    TweenService:Create(minBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(120, 60, 120)}):Play()
 end)
 minBtn.MouseLeave:Connect(function()
-    TweenService:Create(minBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80, 40, 50)}):Play()
+    TweenService:Create(minBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80, 40, 80)}):Play()
 end)
 
 closeBtn.MouseEnter:Connect(function()
-    TweenService:Create(closeBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(120, 50, 70)}):Play()
+    TweenService:Create(closeBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(120, 60, 120)}):Play()
 end)
 closeBtn.MouseLeave:Connect(function()
-    TweenService:Create(closeBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 40, 50)}):Play()
+    TweenService:Create(closeBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(80, 40, 80)}):Play()
 end)
 
-modeDummies.MouseEnter:Connect(function()
-    if farmMode ~= "dummies" then
-        TweenService:Create(modeDummies, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(100, 70, 70)}):Play()
-    end
-end)
-modeDummies.MouseLeave:Connect(function()
-    if farmMode ~= "dummies" then
-        TweenService:Create(modeDummies, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 70)}):Play()
-    end
-end)
-
-modePlayers.MouseEnter:Connect(function()
-    if farmMode ~= "players" then
-        TweenService:Create(modePlayers, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(100, 70, 70)}):Play()
-    end
-end)
-modePlayers.MouseLeave:Connect(function()
-    if farmMode ~= "players" then
-        TweenService:Create(modePlayers, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 70)}):Play()
-    end
-end)
-
-modeBoth.MouseEnter:Connect(function()
-    if farmMode ~= "both" then
-        TweenService:Create(modeBoth, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(100, 70, 70)}):Play()
-    end
-end)
-modeBoth.MouseLeave:Connect(function()
-    if farmMode ~= "both" then
-        TweenService:Create(modeBoth, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 70)}):Play()
-    end
-end)
-
-print("⚔️ AUTO FARM KILL ELITE chargé !")
-print("🎯 Modes: DUMMIES | PLAYERS | BOTH")
+print("🌀 FARM ULTIME chargé !")
+print("⚔️ Téléportation + Spam de toutes les attaques")
+print("💀 Change automatiquement de cible après chaque kill")
 print("⌨️ Raccourci: V")
-print("📱 Mobile: bouton − pour minimiser")
-print("💀 Farm automatique activé")
