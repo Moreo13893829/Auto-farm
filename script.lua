@@ -1,7 +1,6 @@
 --[[
-    ⚡⚡⚡ AUTO FARM ULTIME - TELEPORT + SPAM (FIXED) ⚡⚡⚡
-    Jujutsu Shenanigans
-    Version: 4.1 (Optimisée & Sécurisée)
+    ⚡⚡⚡ AUTO FARM ULTIME - TELEPORT + SPAM (V4.2) ⚡⚡⚡
+    Jujutsu Shenanigans - Mêlée & Full Spam Edition
 ]]
 
 repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer
@@ -40,7 +39,7 @@ gui.ResetOnSpawn = false
 gui.Parent = CoreGui
 
 --------------------------------------------------------------------
--- INTERFACE ULTRA LUXE (Conservée à l'identique)
+-- INTERFACE ULTRA LUXE
 --------------------------------------------------------------------
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 350, 0, 220)
@@ -92,13 +91,13 @@ tpIcon.Font = Enum.Font.GothamBold; tpIcon.TextSize = 22
 
 local headerTitle = Instance.new("TextLabel", header)
 headerTitle.Size = UDim2.new(0, 200, 1, 0); headerTitle.Position = UDim2.new(0, 50, 0, 0)
-headerTitle.BackgroundTransparency = 1; headerTitle.Text = "FARM ULTIME (FIXED)"
+headerTitle.BackgroundTransparency = 1; headerTitle.Text = "FARM ULTIME (V4.2)"
 headerTitle.TextColor3 = Color3.fromRGB(255, 255, 255); headerTitle.Font = Enum.Font.GothamBold
 headerTitle.TextSize = 16; headerTitle.TextXAlignment = Enum.TextXAlignment.Left
 
 local headerSub = Instance.new("TextLabel", header)
 headerSub.Size = UDim2.new(0, 200, 0, 15); headerSub.Position = UDim2.new(0, 50, 0, 30)
-headerSub.BackgroundTransparency = 1; headerSub.Text = "Auto-Lock + Anti-Forcefield"
+headerSub.BackgroundTransparency = 1; headerSub.Text = "Corps-à-corps + Full Spam"
 headerSub.TextColor3 = Color3.fromRGB(180, 180, 220); headerSub.Font = Enum.Font.Gotham
 headerSub.TextSize = 10; headerSub.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -146,7 +145,7 @@ mainBtn.Font = Enum.Font.GothamBold; mainBtn.TextSize = 14
 Instance.new("UICorner", mainBtn).CornerRadius = UDim.new(0, 20)
 
 --------------------------------------------------------------------
--- FONCTIONS OPTIMISÉES (LES FIXS SONT ICI)
+-- FONCTIONS OPTIMISÉES (SPAM + DISTANCE)
 --------------------------------------------------------------------
 
 -- Vérifie si la cible est valide (En vie ET pas de ForceField)
@@ -180,18 +179,27 @@ local function getBestEnemy()
     return bestTarget
 end
 
--- Spam Attaques
+-- Spam ABSOLUMENT TOUTES les attaques (NOUVEAU)
 local function spamAttacks()
-    -- Clics souris (Basic combat)
-    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+    -- Clics souris (Attaques de base / Brise garde)
+    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1) -- Clic Gauche
     task.wait(0.01)
     VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
     
-    -- Touches (Skills)
-    local keys = {Enum.KeyCode.Q, Enum.KeyCode.E, Enum.KeyCode.R, Enum.KeyCode.T}
+    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 2) -- Clic Droit
+    task.wait(0.01)
+    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 2)
+    
+    -- Toutes les touches possibles dans JJS
+    local keys = {
+        Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, -- Compétences 1,2,3,4
+        Enum.KeyCode.Q, Enum.KeyCode.E, Enum.KeyCode.R, Enum.KeyCode.T,            -- Anciennes touches
+        Enum.KeyCode.F, Enum.KeyCode.G, Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C -- Garde, Ulti, Dash
+    }
+    
     for _, key in ipairs(keys) do
         VirtualInputManager:SendKeyEvent(true, key, false, game)
-        task.wait(0.01)
+        task.wait(0.005) -- Très rapide pour spammer sans tout bloquer
         VirtualInputManager:SendKeyEvent(false, key, false, game)
     end
 end
@@ -202,7 +210,7 @@ local function farmLoop()
         local char = localPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         
-        -- Si on est mort, on attend
+        -- Si on est mort, on met en pause
         if not hum or hum.Health <= 0 then
             statusValue.Text = "EN ATTENTE..."
             task.wait(2)
@@ -211,23 +219,21 @@ local function farmLoop()
         
         if statusValue.Text == "EN ATTENTE..." then statusValue.Text = "ACTIF" end
 
-        -- Chercher une cible si on n'en a pas
+        -- Chercher une cible
         if not currentTarget or not isValidTarget(currentTarget) then
             currentTarget = getBestEnemy()
             
             if currentTarget then
-                -- Met à jour l'ESP
                 farmESP:ClearAllChildren()
                 local hl = Instance.new("Highlight", farmESP)
                 hl.Adornee = currentTarget; hl.FillColor = Color3.fromRGB(200, 0, 255)
             end
         end
 
-        -- Si on a une cible valide
+        -- Combat
         if currentTarget and isValidTarget(currentTarget) then
-            -- On utilise le Heartbeat Lock (dans le bouton ON) pour rester derrière lui
             spamAttacks()
-            task.wait(0.1) -- Petit délai pour ne pas faire crash le jeu
+            task.wait(0.05) -- Tire encore plus vite !
         else
             farmESP:ClearAllChildren()
             task.wait(0.5)
@@ -249,7 +255,7 @@ local function toggleFarm()
         mainBtn.Text = "DÉSACTIVER LE FARM"
         mainBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 200)
         
-        -- AUTO-LOCK : Force le personnage à rester collé dans le dos de la cible à chaque frame
+        -- AUTO-LOCK : Maintient le perso à 1.5 mètre dans le dos de la cible (Très proche)
         stickConnection = RunService.Heartbeat:Connect(function()
             if farmEnabled and currentTarget and isValidTarget(currentTarget) then
                 local myChar = localPlayer.Character
@@ -257,8 +263,8 @@ local function toggleFarm()
                     local myRoot = myChar.HumanoidRootPart
                     local tRoot = currentTarget.HumanoidRootPart
                     
-                    -- Se place 4 studs derrière lui, et le regarde
-                    local behindPos = tRoot.Position - (tRoot.CFrame.LookVector * 4)
+                    -- CHANGEMENT ICI : Distance 1.5 au lieu de 4
+                    local behindPos = tRoot.Position - (tRoot.CFrame.LookVector * 1.5)
                     myRoot.CFrame = CFrame.lookAt(behindPos, tRoot.Position)
                 end
             end
@@ -287,5 +293,5 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
-print("🌀 FARM ULTIME v4.1 Chargé !")
-print("✅ Corrections apportées : Anti-Bouclier, Auto-Lock Dos, Anti-Mort.")
+print("🌀 FARM ULTIME v4.2 Chargé !")
+print("✅ Corps-à-corps (1.5 studs) + Tous les clics/touches spammés.")
